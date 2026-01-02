@@ -11,14 +11,37 @@ A web application that collects and displays UV index data from ARPANSA (Austral
 - **IndexedDB Storage**: Persistent local storage of all collected data
 - **Statistics**: Displays aggregate statistics across all locations
 - **Data Export**: Export collected data as JSON for further analysis
+- **Raw Data Access**: Machine-readable interface (`raw.html`) with multiple output formats (JSON, CSV, HTML Table)
 
 ## Usage
+
+### Main Dashboard (index.html)
 
 1. Open `index.html` in a modern web browser
 2. Click "Start Collection" to begin fetching UV data
 3. Data will be automatically collected every minute
 4. View real-time UV levels and historical trends for each location
 5. Use "Export Data" to download collected data
+
+### Raw Data Access (raw.html)
+
+For programmatic access to UV data history:
+
+1. Open `raw.html` in a web browser
+2. Data is automatically loaded on page load
+3. Choose output format:
+   - **JSON**: Compact JSON format for API-like access
+   - **JSON (Pretty)**: Formatted JSON with indentation
+   - **HTML Table**: Structured table for easy parsing
+   - **CSV**: Comma-separated values for spreadsheets
+4. Filter by location or time range
+5. Download data as JSON or CSV files
+
+The raw.html page is designed for:
+- Easy data extraction by programs/scripts
+- Integration with other applications
+- Automated data collection workflows
+- Simple parsing and analysis
 
 ## UV Index Levels
 
