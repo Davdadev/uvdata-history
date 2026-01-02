@@ -310,6 +310,7 @@
             <button class="button button-primary" id="startBtn" onclick="startCollection()">Start Collection</button>
             <button class="button button-secondary" id="stopBtn" onclick="stopCollection()" disabled>Stop Collection</button>
             <button class="button button-secondary" onclick="refreshData()">Refresh Now</button>
+            <button class="button button-primary" onclick="startDemoMode()" id="demoBtn">Demo Mode</button>
             <button class="button button-danger" onclick="clearAllData()">Clear All Data</button>
             <button class="button button-secondary" onclick="exportData()">Export Data</button>
         </div>
@@ -336,6 +337,7 @@
         let pollTimer = null;
         let isCollecting = false;
         let lastFetchTime = null;
+        let demoMode = false;
         
         // Initialize IndexedDB
         async function initDB() {
@@ -445,6 +447,22 @@
             });
         }
         
+        // Generate mock UV data for demo
+        function generateMockUVData() {
+            const australianCities = [
+                'Adelaide', 'Brisbane', 'Canberra', 'Darwin', 'Melbourne', 
+                'Perth', 'Sydney', 'Townsville', 'Alice Springs', 'Hobart'
+            ];
+            
+            const locations = australianCities.map(city => ({
+                name: city,
+                uvIndex: Math.random() * 12 + 0.5, // Random UV between 0.5 and 12.5
+                time: new Date().toISOString()
+            }));
+            
+            return locations;
+        }
+        
         // Parse XML data from ARPANSA
         function parseUVData(xmlText) {
             const parser = new DOMParser();
@@ -474,13 +492,21 @@
                 showLoading(true);
                 updateStatus('Fetching data...', false);
                 
-                const response = await fetch(API_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                let locations;
                 
-                const xmlText = await response.text();
-                const locations = parseUVData(xmlText);
+                if (demoMode) {
+                    // Use mock data in demo mode
+                    locations = generateMockUVData();
+                } else {
+                    // Fetch from real API
+                    const response = await fetch(API_URL);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const xmlText = await response.text();
+                    locations = parseUVData(xmlText);
+                }
                 
                 if (locations.length === 0) {
                     throw new Error('No location data found in response');
@@ -490,7 +516,8 @@
                 await cleanOldData();
                 
                 lastFetchTime = new Date();
-                updateStatus(`Active - ${locations.length} locations`, false);
+                const modeText = demoMode ? ' (Demo Mode)' : '';
+                updateStatus(`Active - ${locations.length} locations${modeText}`, false);
                 showError(null);
                 await displayData();
                 
@@ -625,9 +652,11 @@
         async function startCollection() {
             if (isCollecting) return;
             
+            demoMode = false;
             isCollecting = true;
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
+            document.getElementById('demoBtn').disabled = true;
             
             // Fetch immediately
             await fetchUVData();
@@ -641,13 +670,37 @@
             updateNextUpdateTime();
         }
         
+        // Start demo mode with mock data
+        async function startDemoMode() {
+            if (isCollecting) return;
+            
+            demoMode = true;
+            isCollecting = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('demoBtn').disabled = true;
+            
+            // Fetch immediately with mock data
+            await fetchUVData();
+            
+            // Set up polling with mock data
+            pollTimer = setInterval(async () => {
+                await fetchUVData();
+                updateNextUpdateTime();
+            }, POLL_INTERVAL);
+            
+            updateNextUpdateTime();
+        }
+        
         // Stop data collection
         function stopCollection() {
             if (!isCollecting) return;
             
             isCollecting = false;
+            demoMode = false;
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
+            document.getElementById('demoBtn').disabled = false;
             
             if (pollTimer) {
                 clearInterval(pollTimer);
